@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!--うまく表示できないときは ctrl + shift + R -->
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>噴水ページ</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simplebar@6.3.3/dist/simplebar.min.css">
+    <link rel="stylesheet" href="style.css">
+  </head>
+
+  <body>
+    <!-- 水をためる表現をするためにはheader #pageを上へ-->
+    <div id="water-level"></div>
+    <header>
+        <img src="./media/WELCOME.png" alt="WELCOME">
+        <!--<p>WELCOME!<p>-->
+    </header>
+
+    <div class="scroll-container" id="page">
+        <div class="scroll-content">
+            <header>
+                <a href="#top">Sou Araki</a>
+                <nav>
+                    <a href="#about">About</a>
+                    <a href="#works">Works</a>
+                </nav>
+            </header>
+            <main>
+                <section id="top">
+                    <div class="top-image">
+                        <img src="./media/image_school.jpg" alt="school">
+                        <!--<img src="./media/test1.jpeg" alt="my_Kangaroo">-->
+                    </div>
+                    <h1>Sou Araki <br> Portfolio</h1>
+                </section>
+
+                <section id="about">
+                    <h3 class="fade-in">About</h3>
+                    <p class="fade-in">
+                        荒木 颯 <br>
+                        東京都市大学 デザイン・データ科学部
+                    </p>
+                    <p class="fade-in">
+                        専門: データ分析<br>
+                        スキル: Python<br>
+                    </p>
+                </section>
+
+                <section id="works">
+                    <h2 class="fade-in">Works</h2>
+                    <ul>
+                        <li class="fade-in">作品1</li>
+                        <li class="fade-in">作品2</li>
+                        <li class="fade-in">作品3</li>
+                    </ul>
+                </section>
+
+                <section id="contact">
+                    <h2 class="fade-in">Contact</h2>
+                    <p class="fade-in">
+                        メール: test@example.com<br>
+                        テレフォン: 000-0000-0000
+                    </p>
+                </section>
+
+                <section id="Research">
+                    <h2 class="fade-in">Research</h2>
+                    <ul>
+                        <li class="fade-in">研究1</li>
+                        <li class="fade-in">研究2</li>
+                        <li class="fade-in">研究3</li>
+                    </ul>
+                </section>
+
+                <section id="technology">
+                    <h2 class="fade-in">Technology</h2>
+                    <ul>
+                        <li class="fade-in">技術1</li>
+                        <li class="fade-in">技術2</li>
+                        <li class="fade-in">技術3</li>
+                    </ul>
+                </section>
+            </main>
+            <footer>
+                <span>© 2026 Sou Araki</span>
+            </footer>
+        </div>
+    </div>
+
+    <div id="sketch"></div>
+
+    <div id="message" hidden>
+      <h2>HTMLは飛んでいきました</h2>
+      <button id="reset" aria-label="呼び戻す"><img src="./media/RESET.png" alt="RESET"></button>
+    </div>
+
+    <div id="panel">
+      <div>回転数<b id="rpmText">0</b>rpm(Upper 250)</div>
+      <button id="button">push</button>
+      <div>水圧<b id="powerText">0</b>%</div>
+    </div>
+
+    <!-- こんにちは p5.js-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+    <!--HTML内のスクロールバーが存在していなかったので追加-->
+    <script src="https://cdn.jsdelivr.net/npm/simplebar@6.3.3/dist/simplebar.min.js"></script>
+    <script src="script.js"></script>
+    <script src="script2.js"></script>
+  </body>
+</html>
