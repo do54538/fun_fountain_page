@@ -13,6 +13,8 @@ const rpmText   = document.getElementById("rpmText");
 const powerText = document.getElementById("powerText");
 const waterEl   = document.getElementById("water-level");
 
+const WATER_PER_DROP = 0.5;   // 水滴1個で増える高さ(px)。大きいほど速く溜まる
+
 //状態
 let holding = false;      // ボタンを押しているか
 let power   = 0;          // 水圧 0〜1
@@ -24,6 +26,16 @@ let fly     = null;       // 飛行中の位置と速度
 let drops   = [];         // 水滴の配列
 let nozzleY;              // 噴水の出口のY座標
 let waterLevel = 0;       // 貯水量
+
+//状態に決壊状態を追加
+//const MAX_WATER   = 300;   // 決壊する貯水量(px)
+const HEADER_H = 75; 
+const MAX_WATER = () => nozzleY - HEADER_H; //可変式
+const DRAIN_SPEED = 160;   // 決壊中に水が減る速さ(px/秒)
+
+let breaking   = false;    // 決壊中か
+let breachMark = 0;        // 白い跡の濃さ 0〜1
+
 
 // ===== 操作 =====
 function press(on) { holding = on; }
@@ -39,6 +51,9 @@ document.getElementById("reset").addEventListener("click", () => {
   waterLevel = 0;
   message.hidden = true;
   page.hidden = false;
+
+  breaking = false;
+  breachMark = 0;
 });
 
 
@@ -57,12 +72,14 @@ function windowResized() {
 }
 
 // ===== p5.js: 毎フレーム呼ばれる =====
+//もし貯水量が限界値に達したら、決壊させて右下あたりに白い後を表示させて水の貯水量を減少させるようにしたいなぁ
 function draw() {
   const dt = min(0.05, deltaTime / 1000);   // 前フレームからの経過秒
 
   updatePower(dt);
   updatePage(dt);
   updateDrops(dt);
+  updateWater(dt); // ← 決壊したときの描画追加
 
   clear();
   // 貯水量は背景の div(#water-level)の高さで表す(ページより後ろに表示される)
@@ -74,13 +91,47 @@ function draw() {
   rpmText.textContent = round(speed / 6);   // 度/秒 → 回転/分
   powerText.textContent = round(power * 100);
 
-
+  // 白い跡(右下)
+  if (breachMark > 0) {     
+    drawCrack(width - 20, nozzleY - waterLimit() * 0.2, breachMark);
+    //fill(255, 255 * breachMark);
+    //rect(width - 50, nozzleY - waterLimit() * 0.6, 50, waterLimit() * 0.6, 8);
+  }
 }
 
-// 水圧: 押している間は上がり、離すと下がる
+// 決壊の亀裂:中心から折れ線を伸ばす
+function drawCrack(x, y, alpha) {
+  stroke(255, 255 * alpha);
+  strokeWeight(3);
+  noFill();
+  randomSeed(42);                       // 毎フレーム同じ形にする
+  for (let i = 0; i < 5; i++) {
+    let px = x, py = y;
+    const a = random(PI * 0.6, PI * 1.4);   // 左向きに広がる
+    beginShape();
+    for (let s = 0; s < 8; s++) {
+      vertex(px, py);
+      px += cos(a + random(-0.5, 0.5)) * random(10, 25);
+      py += sin(a + random(-0.5, 0.5)) * random(10, 25);
+    }
+    endShape();
+  }
+  noStroke();
+}
+
+// 水圧: 押している間は上がり、離すと下がる 分解して記述
 function updatePower(dt) {
-  power += ((holding ? 1 : 0) - power) * (1 - exp(-2 * dt));
+  // 目標値:ボタンを押していれば 1、離していれば 0
+  const target = holding
+    ? 1
+    : 0;
+
+  // 目標との差
+  const diff = target - power;
+  const rate = 1 - exp(-2 * dt);
+  power += diff * rate;
 }
+
 
 // ページの回転・震え・飛行
 function updatePage(dt) {
@@ -94,9 +145,11 @@ function updatePage(dt) {
   if (!flying) {
     // 限界に近づくとぶるぶる震える
     const shake = max(0, speed / MAX_SPEED - 0.6) * 30;
-    placePage(center.x + random(-shake, shake) / 2,
-              center.y + random(-shake, shake) / 2, 1);
+    //console.log("!flying shake", shake);
+    placePage(center.x + random(-shake, shake) / 2, center.y + random(-shake, shake) / 2, 1);
 
+    //速度の確認はこちら
+    //console.log("!flying speed", speed);
     if (speed > MAX_SPEED) startFlying(center);
   } else if (!page.hidden) {
     // 飛行中: だんだん加速して小さくなり、消える
@@ -120,11 +173,13 @@ function startFlying(center) {
   flying = true;
   flyTime = 0;
   fly = {
+    //pos: 飛び始めの位置のずれです。
     pos: createVector(0, 0),
+    //vel: 飛ぶ速さ(px/秒)です。
     vel: createVector(random(-0.35, 0.35) * height, -0.55 * height),
   };
   for (let i = 0; i < 150; i++) {
-    const v = p5.Vector.random2D().mult(random(150, 750));
+    const v = p5.Vector.random2D().mult(random(250, 550));
     v.y -= 250;
     drops.push({ pos: center.copy(), vel: v });
   }
@@ -157,9 +212,13 @@ function updateDrops(dt) {
 
     // 地面に到達
     if (d.pos.y >= nozzleY && d.vel.y > 0) {
-      waterLevel += 0.1;
+      //waterLevel += 0.1;
+      //if (!d.leak) waterLevel += 0.1; 
+      if (!d.leak) waterLevel += WATER_PER_DROP;
       d.dead = true;
     }
+    //画面の右外に出たら消す 軽量化のため
+    if (d.pos.x > width) d.dead = true; 
   }
   
   drops = drops.filter(d => !d.dead);
@@ -168,6 +227,25 @@ function updateDrops(dt) {
     (d) => d.pos.y < nozzleY || d.vel.y < 0
   );
   */
+}
+
+
+//決壊したときの関数を追加！
+const waterLimit = () => nozzleY - HEADER_H;
+//const waterLimit = () => min(MAX_WATER, nozzleY - 20);   // 画面が低くても収まるように
+
+function updateWater(dt) {
+  if (!breaking && waterLevel >= waterLimit()) breaking = true;
+
+  if (breaking) {
+    //押し続けるとなかなか減らないので、決壊中は水が減るようにする
+    //waterLevel = max(0, waterLevel - DRAIN_SPEED * dt);
+    waterLevel = max(0, waterLevel - (DRAIN_SPEED + waterLevel * 0.5) * dt);
+    breachMark = min(1, breachMark + 4 * dt);
+    if (waterLevel <= waterLimit() * 0.1) breaking = false;
+  } else {
+    breachMark = max(0, breachMark - dt);     // 跡はゆっくり消える
+  }
 }
 
 
